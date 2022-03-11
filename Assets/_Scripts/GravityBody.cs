@@ -5,25 +5,29 @@ using UnityEngine;
 
 public class GravityBody : MonoBehaviour
 {
-    //stores x:min satellite distance from center y:max satellite distance from center
+    //stores x: min satellite distance from center y: max satellite distance from center
     public Vector2 satelliteArea; 
     //gravity value of this body
     public float gravity;
+    public bool isStar;
 
-    public GameObject[] satellites;
-    GameObject[] objectsOnBody;
+    public List<GameObject> satellites;
+    public List<GameObject> objectsOnBody;
 
     private CircleCollider2D gravityField;
-    private void AttractSatellites()
-    {
-    }
     
     // Start is called before the first frame update
     void Start()
     {
-        gravityField = this.gameObject.AddComponent<CircleCollider2D>();
-        gravityField.radius = satelliteArea.y / (transform.localScale.x);
-        gravityField.isTrigger = true;
+        satellites = new List<GameObject>();
+        objectsOnBody = new List<GameObject>();
+        if (!isStar)
+        {
+            gravityField = this.gameObject.AddComponent<CircleCollider2D>();
+            gravityField.radius = satelliteArea.y / (transform.localScale.x);
+            gravityField.isTrigger = true;
+        }
+        
     }
 
     // Update is called once per frame
@@ -59,4 +63,11 @@ public class GravityBody : MonoBehaviour
         }
     }
 
+    public void AddObjectToSatelliteList(GameObject gameObject)
+    {
+        if (objectsOnBody.Contains(gameObject))
+        {
+            satellites.Add(gameObject);
+        }
+    }
 }

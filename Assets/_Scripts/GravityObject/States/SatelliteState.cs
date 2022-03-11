@@ -7,10 +7,12 @@ public class SatelliteState : GravityObjectState
     private float satelliteSpeed;
     public SatelliteState(Rigidbody2D rb, float speed) : base(rb)
     {
-        //rotateSpeed = 0.5f * rotateSpeed;
+        //rotateSpeed = 0.1f * rotateSpeed;
         //acceleration = 0;
         satelliteSpeed = speed;
     }
+
+    public float SatelliteSpeed { get => satelliteSpeed; set => satelliteSpeed = value; }
 
     public override void Move()
     {
@@ -21,6 +23,7 @@ public class SatelliteState : GravityObjectState
     {
         Vector2 velocity = rb2d.velocity.normalized;
         float angle = Mathf.Atan2(velocity.y, velocity.x) * Mathf.Rad2Deg;
-        rb2d.transform.rotation = Quaternion.Slerp(rb2d.transform.rotation, (Quaternion.AngleAxis(angle, Vector3.forward)), rotateSpeed * Time.fixedDeltaTime);
+        //rb2d.transform.rotation = Quaternion.Slerp(rb2d.transform.rotation, (Quaternion.AngleAxis(angle, Vector3.forward)), /*rotateSpeed*/ 50f * Time.fixedDeltaTime);
+        rb2d.transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
 }

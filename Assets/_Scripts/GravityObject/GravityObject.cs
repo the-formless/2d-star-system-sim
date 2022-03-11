@@ -13,10 +13,14 @@ public class GravityObject : MonoBehaviour
     public RestState restState;
     public Vector2 initialvelocity;
     public string stateName;
-    public float satelliteSpeed;
+    //public float satelliteSpeed;
+    public float satelliteAngleRange;
+    
     private GravityObjectState state;
     private Vector2? gravityDirection;
     private Rigidbody2D rb2d;
+    private SatelliteStateHelper stateHelper;
+    private float gravityBodySpeed;
 
     public GravityObjectState State { get => state;}
 
@@ -34,9 +38,10 @@ public class GravityObject : MonoBehaviour
     {
         freefallState = new FreeFallState(rb2d);
         freeSpaceState = new FreeSpaceState(rb2d);
-        satelliteState = new SatelliteState(rb2d, satelliteSpeed);
+        satelliteState = new SatelliteState(rb2d, 0f);
         projectileState = new ProjectileState(rb2d);
         restState = new RestState(rb2d);
+        stateHelper = new SatelliteStateHelper(rb2d, satelliteAngleRange);
     }
 
     // Update is called once per frame
@@ -52,34 +57,20 @@ public class GravityObject : MonoBehaviour
         {
             if (InSatelliteArea())
             {
-                Vector2 plane = (Vector2)(transform.position - gravityBody.transform.position).normalized;
-                Vector2 normal = new Vector2(plane.y, -plane.x);
-                Vector2 velocity = rb2d.velocity.normalized;
-                float angleBetween = Vector2.Angle(velocity, normal);
-                if (angleBetween <= 30 || (angleBetween > 90 && (180 - angleBetween <= 30)) && rb2d.velocity.magnitude > 0)
+                if (stateHelper.CheckSatelliteStateTransition())
                 {
-                    TransitionToState(satelliteState);
-                    if((angleBetween > 90 && (180 - angleBetween <= 30)))
-                    {
-                        normal = -normal;
-                    }
-                    state.SetDirection(normal);
-                    Debug.DrawRay(transform.position, (Vector3)normal);
-                    rotateDirection = normal;
-                    //Debug.Log(state.GetType());
+                    SimulateSatellite();
+                    rotateDirection = stateHelper.satelliteDirection;
                 }
             }
             else
             {
-                TransitionToState(freefallState);
-                gravityDirection = (transform.position - gravityBody.transform.position).normalized * -1f;
-                Debug.DrawRay(transform.position, (Vector3)gravityDirection);
-                state.SetDirection(gravityDirection.Value);
+                SimulateFreeFall();
                 rotateDirection = gravityDirection;
             }
-            if(((Vector2)transform.position - (Vector2)gravityBody.transform.position).magnitude > gravityBody.satelliteArea.y)
+            if (OutsideGravityField())
             {
-                TransitionToState(freeSpaceState);
+                SimulateFreeSpace();
             }
             state.SetAcceleration(gravityBody.gravity);
         }
@@ -89,6 +80,46 @@ public class GravityObject : MonoBehaviour
         }
         state.Move();
         state.Rotate(rotateDirection);
+    }
+
+    private void SimulateFreeSpace()
+    {
+        TransitionToState(freeSpaceState);
+    }
+
+    private bool OutsideGravityField()
+    {
+        return ((Vector2)transform.position - (Vector2)gravityBody.transform.position).magnitude > gravityBody.satelliteArea.y;
+    }
+
+    private void SimulateFreeFall()
+    {
+        TransitionToState(freefallState);
+        gravityDirection = (transform.position - gravityBody.transform.position).normalized * -1f;
+        Debug.DrawRay(transform.position, (Vector3)gravityDirection);
+        state.SetDirection(gravityDirection.Value);
+    }
+
+    private void SimulateSatellite()
+    {
+        TransitionToState(satelliteState);
+        if (satelliteState.SatelliteSpeed == 0)
+        {
+            satelliteState.SatelliteSpeed = stateHelper.CalculateSatelliteSpeed(gravityBodySpeed);
+        }
+        state.SetDirection(stateHelper.satelliteDirection);
+        Debug.DrawRay(transform.position, (Vector3)stateHelper.satelliteDirection);
+        if (InSatelliteList())
+        {
+            gravityBody.AddObjectToSatelliteList(this.gameObject);
+        }
+    }
+
+    
+
+    private bool InSatelliteList()
+    {
+        return !gravityBody.satellites.Contains(this.gameObject);
     }
 
     private void TransitionToState(GravityObjectState stateType)
@@ -102,11 +133,19 @@ public class GravityObject : MonoBehaviour
 
     public void AssignGravityBody(GravityBody gravityBody)
     {
+        Planet p = gravityBody.gameObject.GetComponent<Planet>();
+        stateHelper.AngleRange = p.angleRange;
         state = projectileState;
-
         state.SetAcceleration(gravityBody.gravity);
-        state.SetRoateSpeed(gravityBody.gravity);
+        state.SetRoateSpeed(gravityBody.gravity * 5f);
+        //UpdateStatesValues(gravityBody.gravity, p);
         this.gravityBody = gravityBody;
+        stateHelper.AssignGravityBody(gravityBody);
+        gravityBody.objectsOnBody.Add(this.gameObject);
+        if (p)
+        {
+            gravityBodySpeed = p.planetSpeed;
+        }
     }
 
     public void ResignGravityBody()
@@ -115,7 +154,15 @@ public class GravityObject : MonoBehaviour
         state.SetAcceleration(0);
         state.SetRoateSpeed(rb2d.velocity.magnitude);
         state.SetDirection(rb2d.velocity.normalized);
+        gravityBody.objectsOnBody.Remove(this.gameObject);
+        if (InSatelliteList())
+        {
+            gravityBody.satellites.Remove(this.gameObject);
+        }
         this.gravityBody = null;
+        satelliteState.SatelliteSpeed = 0f;
+        stateHelper.ResignGravityBody();
+        
     }
 
     bool InSatelliteArea()
