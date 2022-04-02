@@ -52,6 +52,11 @@ public class GravityObject : MonoBehaviour
 
     private void FixedUpdate()
     {
+        HandleStates();
+    }
+
+    private void HandleStates()
+    {
         Vector2? rotateDirection = Vector2.zero;
         if (gravityBody)
         {
@@ -77,6 +82,7 @@ public class GravityObject : MonoBehaviour
         else
         {
             rotateDirection = rb2d.velocity.normalized;
+            ResetSatelliteSpeed();
         }
         state.Move();
         state.Rotate(rotateDirection);
@@ -100,26 +106,31 @@ public class GravityObject : MonoBehaviour
         state.SetDirection(gravityDirection.Value);
     }
 
+    private void ResetSatelliteSpeed()
+    {
+        satelliteState.SatelliteSpeed = 0;
+    }
     private void SimulateSatellite()
     {
         TransitionToState(satelliteState);
         if (satelliteState.SatelliteSpeed == 0)
         {
-            satelliteState.SatelliteSpeed = stateHelper.CalculateSatelliteSpeed(gravityBodySpeed);
+            satelliteState.SatelliteSpeed = stateHelper.CalculateSatelliteSpeed(rb2d.velocity.magnitude);
         }
         state.SetDirection(stateHelper.satelliteDirection);
         Debug.DrawRay(transform.position, (Vector3)stateHelper.satelliteDirection);
-        if (InSatelliteList())
+        if (InSatelliteList() == false)
         {
             gravityBody.AddObjectToSatelliteList(this.gameObject);
         }
+        rb2d.velocity += gravityBody.gameObject.GetComponent<Rigidbody2D>().velocity;
     }
 
     
 
     private bool InSatelliteList()
     {
-        return !gravityBody.satellites.Contains(this.gameObject);
+        return gravityBody.satellites.Contains(this.gameObject);
     }
 
     private void TransitionToState(GravityObjectState stateType)
@@ -175,8 +186,10 @@ public class GravityObject : MonoBehaviour
             {
                 return true;
             }
+            ResetSatelliteSpeed();
             return false;
         }
+        ResetSatelliteSpeed();
         return false;
     }
 

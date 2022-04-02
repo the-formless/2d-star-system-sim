@@ -44,21 +44,25 @@ public class SatelliteStateHelper
         return normal;
     }
 
-    public float CalculateSatelliteSpeed(float gravityBodySpeed)
+    public float CalculateSatelliteSpeed(float currentVelocity)
     {
         float dot = Vector2.Dot(gravityBodyRigidBody.velocity.normalized, satelliteDirection);
+        float distance = Vector2.Distance(gravityBody.transform.position, gravityObjectRigidBody.transform.position);
+        float vFactor = Mathf.Sqrt(1 / distance);
+        float speedToReturn;
         if (dot <= 0.33)
         {
-            return gravityBodySpeed * 2;
+            speedToReturn = currentVelocity + currentVelocity * 3.33f * vFactor;
         }
         else if (dot <= 0.66)
         {
-            return gravityBodySpeed * 4;
+            speedToReturn = currentVelocity + currentVelocity * 6.66f * vFactor;
         }
         else
         {
-            return gravityBodySpeed * 8;
+            speedToReturn = currentVelocity + currentVelocity * 9.99f * vFactor;
         }
+        return speedToReturn; // Mathf.Clamp(speedToReturn, gravityBodySpeed * 4, gravityBodySpeed * 7);
     }
 
     public void AssignGravityBody(GravityBody gb)
