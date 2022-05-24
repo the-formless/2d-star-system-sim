@@ -11,16 +11,16 @@ public class GravityBody : MonoBehaviour
     public float gravity;
     public bool isStar;
 
-    public List<GameObject> satellites;
-    public List<GameObject> objectsOnBody;
+    //public List<GameObject> satellites;
+    //public List<GameObject> objectsOnBody;
 
     private CircleCollider2D gravityField;
     
     // Start is called before the first frame update
     void Start()
     {
-        satellites = new List<GameObject>();
-        objectsOnBody = new List<GameObject>();
+        //satellites = new List<GameObject>();
+        //objectsOnBody = new List<GameObject>();
         if (!isStar)
         {
             gravityField = this.gameObject.AddComponent<CircleCollider2D>();
@@ -50,9 +50,20 @@ public class GravityBody : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (collision.GetComponent<GravityObject>())
+        GravityObject inAtmospherObject = null;
+        try
         {
-            collision.GetComponent<GravityObject>().AssignGravityBody(this);
+            inAtmospherObject = collision.GetComponent<GravityObject>();
+        }
+        catch
+        {
+            Debug.Log("Not GravityObject");
+        }
+        if (inAtmospherObject != null)
+        {
+            inAtmospherObject.AssignGravityBody(this);
+            if(!inAtmospherObject.character)
+                inAtmospherObject.gameObject.GetComponent<TrailRenderer>().emitting = true;
         }
     }
     private void OnTriggerExit2D(Collider2D collision)
@@ -60,14 +71,22 @@ public class GravityBody : MonoBehaviour
         if (collision.GetComponent<GravityObject>())
         {
             collision.GetComponent<GravityObject>().ResignGravityBody();
+            if(collision.GetComponent<GravityObject>().character == false)
+                StartCoroutine(StopTrailAfter5secs(collision.GetComponent<TrailRenderer>()));
         }
     }
 
-    public void AddObjectToSatelliteList(GameObject gameObject)
+    IEnumerator StopTrailAfter5secs(TrailRenderer tr)
     {
-        if (objectsOnBody.Contains(gameObject))
-        {
-            satellites.Add(gameObject);
-        }
+        yield return new WaitForSeconds(0.5f);
+        tr.emitting = false;
     }
+
+    //public void AddObjectToSatelliteList(GameObject gameObject)
+    //{
+    //    if (objectsOnBody.Contains(gameObject))
+    //    {
+    //        satellites.Add(gameObject);
+    //    }
+    //}
 }

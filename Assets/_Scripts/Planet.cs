@@ -21,7 +21,10 @@ public class Planet : MonoBehaviour
         rigidbody2D = GetComponent<Rigidbody2D>();
         rigidbody2D.velocity = initialVelocity;
         satelliteHelper = new SatelliteStateHelper(rigidbody2D, angleRange);
-        satelliteHelper.AssignGravityBody(star);
+        if (star)
+            satelliteHelper.AssignGravityBody(star);
+        else
+            satelliteHelper.satelliteDirection = Vector2.zero;
         planet = GetComponent<GravityBody>();
     }
 
@@ -37,6 +40,8 @@ public class Planet : MonoBehaviour
         {
             Move(satelliteHelper.satelliteDirection);
         }
+        //
+        //Move(satelliteHelper.satelliteDirection);
     }
 
     private void Move(Vector2 satelliteDirection)

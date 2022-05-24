@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class SatelliteStateHelper 
 {
-    public Vector2 satelliteDirection;
+    public Vector2 satelliteDirection = Vector2.zero;
 
     private GravityBody gravityBody;
     private Rigidbody2D gravityBodyRigidBody;
